@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Pattern Detector</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #21253a;
+      --border: #2e3248;
+      --accent: #6c63ff;
+      --accent-hover: #857df7;
+      --text: #e2e4ef;
+      --text-muted: #7b8099;
+      --tag-lang: #1e3a5f;
+      --tag-lang-text: #63b3ed;
+      --tag-style: #1e3b2e;
+      --tag-style-text: #68d391;
+      --tag-add: #3b2e1a;
+      --tag-add-text: #f6ad55;
+      --match-bg: #2a2310;
+      --match-border: #f6ad55;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2rem 0 4rem;
+    }
+    .page-header { text-align: center; margin-bottom: 2.5rem; }
+    .page-header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; color: #fff; }
+    .page-header p { color: var(--text-muted); max-width: 560px; margin: 0.5rem auto 0; font-size: 0.95rem; line-height: 1.6; }
+    .card-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+    textarea#input-text {
+      width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.95rem; line-height: 1.7;
+      padding: 1rem; resize: vertical; min-height: 220px; outline: none; transition: border-color 0.2s;
+    }
+    textarea#input-text:focus { border-color: var(--accent); }
+    textarea#input-text::placeholder { color: var(--text-muted); }
+    .btn-analyze {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 0.65rem 1.75rem; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-analyze:hover { background: var(--accent-hover); }
+    .btn-analyze:active { transform: scale(0.98); }
+    .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-copy {
+      background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-copy:hover { color: var(--text); border-color: var(--text-muted); }
+    #summary-bar {
+      display: none; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem 1.5rem; margin-bottom: 1.5rem;
+      align-items: center; gap: 2rem; flex-wrap: wrap;
+    }
+    .summary-stat { display: flex; flex-direction: column; gap: 2px; }
+    .summary-stat .num { font-size: 1.6rem; font-weight: 700; color: #fff; line-height: 1; }
+    .summary-stat .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .category-section { margin-bottom: 2rem; }
+    .category-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); margin-bottom: 0.75rem; padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .pattern-group { margin-bottom: 1.25rem; }
+    .pattern-name {
+      font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.5rem; position: relative; cursor: default;
+    }
+    .pattern-count {
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 99px;
+      font-size: 0.72rem; padding: 1px 8px; color: var(--text-muted); font-weight: 500;
+    }
+    .finding-card {
+      background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+      border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.5rem; font-size: 0.88rem;
+    }
+    .finding-card.cat-lang { border-left-color: var(--tag-lang-text); }
+    .finding-card.cat-style { border-left-color: var(--tag-style-text); }
+    .finding-card.cat-add { border-left-color: var(--tag-add-text); }
+    .finding-location { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.35rem; font-family: monospace; }
+    .finding-match {
+      display: inline-block; background: var(--match-bg); border: 1px solid var(--match-border);
+      border-radius: 4px; padding: 1px 6px; color: #f6ad55; font-family: monospace;
+      font-size: 0.85rem; margin-bottom: 0.4rem; word-break: break-all;
+    }
+    .finding-context { color: var(--text-muted); font-size: 0.82rem; line-height: 1.55; font-style: italic; }
+    .cat-tag {
+      display: inline-block; border-radius: 4px; font-size: 0.7rem; font-weight: 600;
+      padding: 1px 7px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .cat-tag.lang { background: var(--tag-lang); color: var(--tag-lang-text); }
+    .cat-tag.style { background: var(--tag-style); color: var(--tag-style-text); }
+    .cat-tag.add { background: var(--tag-add); color: var(--tag-add-text); }
+    #empty-state { display: none; text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    #empty-state .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    #spinner { display: none; text-align: center; padding: 2rem; color: var(--text-muted); }
+    #error-msg {
+      display: none; background: #2d1a1a; border: 1px solid #7b2929; color: #fc8181;
+      border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.88rem; margin-bottom: 1rem;
+    }
+    #results-container { display: none; }
+    .copy-feedback { font-size: 0.8rem; color: var(--tag-style-text); margin-left: 0.5rem; opacity: 0; transition: opacity 0.3s; }
+    .copy-feedback.show { opacity: 1; }
+    .pattern-info-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 15px; height: 15px; border-radius: 50%; background: var(--surface-2);
+      border: 1px solid var(--border); color: var(--text-muted); font-size: 0.65rem;
+      font-weight: 700; font-style: normal; cursor: help; flex-shrink: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .pattern-info-icon:hover { border-color: var(--accent); color: var(--accent); }
+    #pattern-tooltip {
+      position: fixed; z-index: 9999; width: 300px; background: #1e2235;
+      border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.55); pointer-events: none;
+      opacity: 0; transform: translateY(4px); transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    #pattern-tooltip.visible { opacity: 1; transform: translateY(0); }
+    .tt-name { font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; }
+    .tt-def { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 0.55rem; }
+    .tt-examples-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .tt-example { font-size: 0.76rem; color: #f6ad55; font-style: italic; line-height: 1.5; padding-left: 0.6rem; border-left: 2px solid #f6ad5566; margin-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:860px;">
+    <div class="page-header">
+      <h1>AI Pattern Detector</h1>
+      <p>Paste your draft below. The scanner checks for 13 mechanical AI writing patterns and reports exactly where they appear — ready to hand off to an LLM for revision.</p>
+    </div>
+    <div class="card-panel mb-4">
+      <textarea id="input-text" placeholder="Paste your content here…"></textarea>
+      <div class="d-flex align-items-center gap-3 mt-3">
+        <button class="btn-analyze" id="btn-analyze" onclick="runAnalysis()">Analyze</button>
+        <span id="char-count" style="font-size:0.82rem;color:var(--text-muted);">0 characters</span>
+      </div>
+    </div>
+    <div id="error-msg"></div>
+    <div id="spinner">
+      <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+      Scanning patterns…
+    </div>
+    <div id="summary-bar" class="d-flex">
+      <div class="summary-stat"><span class="num" id="stat-total">0</span><span class="label">Total Flags</span></div>
+      <div class="summary-stat"><span class="num" id="stat-patterns">0</span><span class="label">Pattern Types</span></div>
+      <div class="summary-stat"><span class="num" id="stat-cats">0</span><span class="label">Categories</span></div>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <button class="btn-copy" onclick="copyReport()">Copy Report</button>
+        <span class="copy-feedback" id="copy-feedback">Copied!</span>
+      </div>
+    </div>
+    <div id="empty-state"><div class="icon">&#10003;</div><p>No AI patterns detected in this text.</p></div>
+    <div id="results-container"></div>
+  </div>
+
+  <div id="pattern-tooltip">
+    <div class="tt-name" id="tt-name"></div>
+    <div class="tt-def" id="tt-def"></div>
+    <div class="tt-examples-label">Examples</div>
+    <div id="tt-examples"></div>
+  </div>
+
+  <script>
+  // ================================================================
+  // DETECTION ENGINE
+  // ================================================================
+
+  function buildLocationIndex(text) {
+    const index = [];
+    const paragraphs = text.split(/\n\n+/);
+    let cursor = 0;
+    for (const para of paragraphs) {
+      const paraStart = cursor;
+      const paraEnd = cursor + para.length;
+      const sentOffsets = [];
+      for (const m of para.matchAll(/[^.!?]*[.!?]?/g)) {
+        if (m[0].trim()) sentOffsets.push(paraStart + m.index);
+      }
+      if (!sentOffsets.length) sentOffsets.push(paraStart);
+      index.push([paraStart, paraEnd, sentOffsets]);
+      cursor += para.length + 2;
+    }
+    return index;
+  }
+
+  function offsetToLocation(offset, index) {
+    for (let pi = 0; pi < index.length; pi++) {
+      const [pStart, pEnd, sentStarts] = index[pi];
+      if (offset >= pStart && offset <= pEnd) {
+        let sentNum = 1;
+        for (let si = 0; si < sentStarts.length; si++) {
+          if (offset >= sentStarts[si]) sentNum = si + 1;
+        }
+        return `Paragraph ${pi + 1}, Sentence ${sentNum}`;
+      }
+    }
+    return 'End of document';
+  }
+
+  function makeContext(text, start, end, win = 80) {
+    const ctxStart = Math.max(0, start - win / 2);
+    const ctxEnd = Math.min(text.length, end + win / 2);
+    return (ctxStart > 0 ? '…' : '') + text.slice(ctxStart, ctxEnd).trim() + (ctxEnd < text.length ? '…' : '');
+  }
+
+  function finding(patternType, category, location, matchedText, context) {
+    return { pattern_type: patternType, category, location, matched_text: matchedText, context };
+  }
+
+  // --- Pattern 1: AI Vocabulary Density ---
+  const AI_VOCAB = new Set([
+    'bolstered','crucial','emphasizing','enduring','enhance','fostering',
+    'highlighting','pivotal','showcasing','underscore','underscores','underscored','vibrant',
+    'additionally','boasts','delve','delves','delved','garner','garnered',
+    'intricate','intricacies','interplay','meticulous','meticulously',
+    'tapestry','testament','valuable',
+    'align','aligns','landscape','nuanced','multifaceted',
+  ]);
+
+  function detectAiVocab(text, index) {
+    const findings = [];
+    for (const m of text.matchAll(/\b\w+\b/g)) {
+      if (AI_VOCAB.has(m[0].toLowerCase())) {
+        findings.push(finding('AI Vocabulary Density', 'Language & Grammar',
+          offsetToLocation(m.index, index), m[0],
+          makeContext(text, m.index, m.index + m[0].length)));
+      }
+    }
+    return findings;
+  }
+
+  // --- Pattern 2: Copulative Avoidance ---
+  const NOUN_SIGNAL_BEFORE = /\b(key|main|core|top|major|new|unique|special|important|premium|notable|additional|advanced|standard|basic|its|their|our|your|all|these|those|the|a|an|of|and|or|with|other|more|many|several|various|following|include|including|such)\s+$/i;
+  const AMBIGUOUS_VERBS = /^(features?|offers?|marks?)$/i;
+
+  function isNounUsage(word, matchIndex, text) {
+    if (!AMBIGUOUS_VERBS.test(word)) return false;
+    const end = matchIndex + word.length;
+    const after = text.slice(end, end + 3).replace(/^[ \t]+/, '');
+    if (after.startsWith(':') || after.startsWith('\n') || after === '') return true;
+    const before = text.slice(Math.max(0, matchIndex - 30), matchIndex);
+    if (NOUN_SIGNAL_BEFORE.test(before)) return true;
+    const lineStart = text.lastIndexOf('\n', matchIndex);
+    const linePrefix = text.slice(lineStart + 1, matchIndex).trim();
+    if (!linePrefix || /^[#\-*\d.\u2022\u2013]+\s*$/.test(linePrefix)) return true;
+    if (/^marks?$/i.test(word)) {
+      const afterWord = text.slice(end, end + 10).replace(/^[ \t]+/, '');
+      if (!/^(a|an|the|this|that|one)\b/i.test(afterWord)) return true;
+    }
+    return false;
+  }
+
+  function detectCopulativeAvoidance(text, index) {
+    const findings = [];
+    for (const m of text.matchAll(/\b(serves?\s+as|stands?\s+as|marks?|represents?|boasts?|features?|offers?)\b/gi)) {
+      if (isNounUsage(m[0], m.index, text)) continue;
+      findings.push(finding('Copulative Avoidance', 'Language & Grammar',
+        offsetToLocation(m.index, index), m[0],
+        makeContext(text, m.index, m.index + m[0].length)));
+    }
+    return findings;
+  }
+
+  // --- Pattern 3: Negative Parallelism "Not Just…But" ---
+  function detectNotJustBut(text, index) {
+    const findings = [];
+    const re = /\bnot\s+(only|just|merely|simply)[\s\S]{1,120}?(but(\s+also)?|rather)\b/gis;
+    for (const m of text.matchAll(re)) {
+      if (m[0].length <= 120) {
+        findings.push(finding('Negative Parallelism ("Not Just\u2026But")', 'Language & Grammar',
+          offsetToLocation(m.index, index), m[0],
+          makeContext(text, m.index, m.index + m[0].length)));
+      }
+    }
+    return findings;
+  }
+
+  // --- Pattern 4: Negative Parallelism "Not X…But Y" ---
+  function detectNotXButY(text, index) {
+    const findings = [];
+    const re = new RegExp(
+      "it'?s\\s+not\\b[^.!?\\n]{1,120}[;,\u2014]\\s*it'?s\\b" +
+      "|this\\s+is\\s+not\\b[^.!?\\n]{1,120}[;,\u2014]\\s*(?:it'?s|this\\s+is)\\b" +
+      "|\\b\\w+\\s+is\\s+not\\s+\\w[^.!?\\n]{0,80}[.!?]\\s+(?:it|this|that)\\s+is\\b" +
+      "|\\bisn'?t\\b[^.!?\\n]{1,120}[.!?]\\s+(?:it'?s|this\\s+is|that'?s)\\b" +
+      "|,\\s+not\\s+(?:the|a|an|this|that)\\s+\\w[\\w\\s\\-']{0,40}[.!?]" +
+      "|not\\s+a\\s+\\w[\\w\\s]{0,40}[,\u2014]\\s*(it'?s|but|rather)" +
+      "|no\\s+\\w+,\\s*no\\s+\\w+",
+      'gi'
+    );
+    for (const m of text.matchAll(re)) {
+      findings.push(finding('Negative Parallelism ("Not X\u2026But Y")', 'Language & Grammar',
+        offsetToLocation(m.index, index), m[0],
+        makeContext(text, m.index, m.index + m[0].length)));
+    }
+    return findings;
+  }
+
+  // --- Pattern 5: Rule of Three ---
+  function detectRuleOfThree(text, index) {
+    const findings = [];
+    const re = /[\w][\w\s\-'"]{2,40},\s+[\w][\w\s\-'"]{2,40},?\s+and\s+[\w][\w\s\-'"]{2,40}/gi;
+    for (const m of text.matchAll(re)) {
+      const before = text.slice(Math.max(0, m.index - 2), m.index);
+      if (before.includes(',')) continue;
+      findings.push(finding('Rule of Three', 'Language & Grammar',
+        offsetToLocation(m.index, index), m[0].trim(),
+        makeContext(text, m.index, m.index + m[0].length)));
+    }
+    return findings;
+  }
+
+  // --- Pattern 6: Elegant Variation ---
+  const ELEGANT_VARIATION_TERMS = [
+    'the entrepreneur','the executive','the founder','the leader',
+    'the pioneer','the visionary','the innovator','the figure',
+    'the individual','the subject','the protagonist','the key player',
+    'the system','the tool','the platform','the solution',
+    'the framework','the model','the approach','the method',
+    'the institution','the organization','the entity','the body',
+    'the group','the collective',
+  ];
+
+  function detectElegantVariation(text, index) {
+    const findings = [];
+    const textLower = text.toLowerCase();
+    for (const term of ELEGANT_VARIATION_TERMS) {
+      let start = 0;
+      while (true) {
+        const pos = textLower.indexOf(term, start);
+        if (pos === -1) break;
+        findings.push(finding('Elegant Variation', 'Language & Grammar',
+          offsetToLocation(pos, index), text.slice(pos, pos + term.length),
+          makeContext(text, pos, pos + term.length)));
+        start = pos + term.length;
+      }
+    }
+    return findings;
+  }
+
+  // --- Pattern 7: Title Case Section Headings ---
+  const SKIP_WORDS = new Set(['a','an','the','of','in','on','at','to','for','and','but','or','nor','with','by','as','vs']);
+
+  function isTitleCase(headingText) {
+    const words = headingText.split(/\s+/);
+    const contentWords = words.slice(1).filter(w => !SKIP_WORDS.has(w.toLowerCase()) && /^[a-zA-Z]+$/.test(w));
+    if (!contentWords.length) return false;
+    const capped = contentWords.filter(w => w[0] === w[0].toUpperCase() && w[0] !== w[0].toLowerCase()).length;
+    return capped / contentWords.length > 0.6;
+  }
+
+  function detectTitleCaseHeadings(text, index) {
+    const findings = [];
+    for (const m of text.matchAll(/^(#{1,6})\s+(.+)$/gm)) {
+      if (isTitleCase(m[2])) {
+        findings.push(finding('Title Case Section Headings', 'Style',
+          offsetToLocation(m.index, index), m[0], m[0]));
+      }
+    }
+    return findings;
+  }
+
+  // --- Pattern 8: Mechanical Bolding ---
+  function detectMechanicalBolding(text, index) {
+    const findings = [];
+    const boldMatches = [...text.matchAll(/\*\*(.+?)\*\*|__(.+?)__/g)];
+    const totalWords = Math.max(text.split(/\s+/).length, 1);
+    const boldWordCount = boldMatches.reduce((sum, m) => sum + (m[1] || m[2] || '').split(/\s+/).length, 0);
+    if (boldWordCount / totalWords > 0.08) {
+      for (const m of boldMatches) {
+        findings.push(finding('Mechanical Bolding', 'Style',
+          offsetToLocation(m.index, index), m[0],
+          makeContext(text, m.index, m.index + m[0].length)));
+      }
+    }
+    return findings;
+  }
+
+  // --- Pattern 9: Emoji in Structural Elements ---
+  function detectEmojiStructural(text, index) {
+    const findings = [];
+    for (const m of text.matchAll(/^[^\w\s]*\p{Emoji_Presentation}[^\n]*$/gmu)) {
+      findings.push(finding('Emoji in Structural Elements', 'Style',
+        offsetToLocation(m.index, index), m[0].trim(), m[0].trim()));
+    }
+    return findings;
+  }
+
+  // --- Pattern 10: Em Dash Overuse ---
+  function detectEmDash(text, index) {
+    const findings = [];
+    for (const m of text.matchAll(/\u2014/g)) {
+      findings.push(finding('Em Dash Overuse', 'Style',
+        offsetToLocation(m.index, index), '\u2014',
+        makeContext(text, m.index, m.index + 1)));
+    }
+    return findings;
+  }
+
+  // --- Pattern 11: Unnecessary Tables ---
+  function detectUnnecessaryTables(text, index) {
+    const findings = [];
+    const blocks = text.split(/\n\n+/);
+    let charOffset = 0;
+    for (const block of blocks) {
+      const rows = block.split('\n').filter(l => /^\|.+\|/.test(l));
+      const dataRows = rows.filter(r => !/^\|[\s\-:]+\|/.test(r));
+      if (dataRows.length >= 1 && dataRows.length <= 4) {
+        const blockPos = text.indexOf(block, charOffset);
+        const preview = block.trim().slice(0, 120) + (block.trim().length > 120 ? '\u2026' : '');
+        findings.push(finding('Unnecessary Table', 'Style',
+          offsetToLocation(blockPos, index), preview,
+          block.trim().slice(0, 200) + (block.trim().length > 200 ? '\u2026' : '')));
+      }
+      charOffset += block.length + 2;
+    }
+    return findings;
+  }
+
+  // --- Pattern 12: Sycophantic Opener ---
+  function detectSycophanticOpener(text, index) {
+    const findings = [];
+    const m = text.trim().match(/^(great\s+(question|point|idea|choice)|absolutely[!,]|certainly[!,]|of\s+course[!,]|excellent\s+(question|point)|sure\s+thing|i'?d\s+be\s+happy\s+to|what\s+a\s+(great|wonderful|fantastic))/i);
+    if (m) {
+      findings.push(finding('Sycophantic Opener', 'Additional',
+        offsetToLocation(0, index), m[0],
+        makeContext(text, 0, m[0].length)));
+    }
+    return findings;
+  }
+
+  // --- Pattern 13: Formulaic Conclusion ---
+  function detectFormulaisticConclusion(text, index) {
+    const findings = [];
+    const paragraphs = text.trim().split(/\n\n+/).filter(p => p.trim());
+    if (!paragraphs.length) return findings;
+    const lastPara = paragraphs[paragraphs.length - 1];
+    const lastParaOffset = text.lastIndexOf(lastPara);
+    const re = /\b(in\s+(summary|conclusion|closing)|to\s+(summarize|recap|conclude)|overall[,\s]|ultimately[,\s]|taken\s+together[,\s]|all\s+(things|factors)\s+considered)/gi;
+    for (const m of lastPara.matchAll(re)) {
+      const absOffset = lastParaOffset + m.index;
+      findings.push(finding('Formulaic Conclusion', 'Additional',
+        offsetToLocation(absOffset, index), m[0],
+        makeContext(text, absOffset, absOffset + m[0].length)));
+    }
+    return findings;
+  }
+
+  // --- Main analyzer ---
+  const CATEGORY_ORDER = ['Language & Grammar', 'Style', 'Additional'];
+
+  function analyze(text) {
+    if (!text || !text.trim()) return [];
+    const index = buildLocationIndex(text);
+    let all = [];
+    all = all.concat(detectAiVocab(text, index));
+    all = all.concat(detectCopulativeAvoidance(text, index));
+    all = all.concat(detectNotJustBut(text, index));
+    all = all.concat(detectNotXButY(text, index));
+    all = all.concat(detectRuleOfThree(text, index));
+    all = all.concat(detectElegantVariation(text, index));
+    all = all.concat(detectTitleCaseHeadings(text, index));
+    all = all.concat(detectMechanicalBolding(text, index));
+    all = all.concat(detectEmojiStructural(text, index));
+    all = all.concat(detectEmDash(text, index));
+    all = all.concat(detectUnnecessaryTables(text, index));
+    all = all.concat(detectSycophanticOpener(text, index));
+    all = all.concat(detectFormulaisticConclusion(text, index));
+    all.sort((a, b) => {
+      const ca = CATEGORY_ORDER.indexOf(a.category), cb = CATEGORY_ORDER.indexOf(b.category);
+      if (ca !== cb) return ca - cb;
+      if (a.pattern_type !== b.pattern_type) return a.pattern_type.localeCompare(b.pattern_type);
+      const pn = loc => { const m = loc.match(/Paragraph\s+(\d+)/); return m ? +m[1] : 0; };
+      const sn = loc => { const m = loc.match(/Sentence\s+(\d+)/); return m ? +m[1] : 0; };
+      return pn(a.location) - pn(b.location) || sn(a.location) - sn(b.location);
+    });
+    return all;
+  }
+
+  function groupFindings(findings) {
+    const grouped = {};
+    for (const f of findings) {
+      if (!grouped[f.category]) grouped[f.category] = {};
+      if (!grouped[f.category][f.pattern_type]) grouped[f.category][f.pattern_type] = [];
+      grouped[f.category][f.pattern_type].push({ location: f.location, matched_text: f.matched_text, context: f.context });
+    }
+    return grouped;
+  }
+
+  // ================================================================
+  // UI
+  // ================================================================
+
+  const PATTERN_INFO = {
+    'AI Vocabulary Density': {
+      def: 'LLMs overuse a predictable set of elevated, formal-sounding words far more often than human writers — words like "pivotal", "delve", "tapestry", and "meticulous" cluster together as a strong signal.',
+      examples: ['"This pivotal interplay is crucial to understanding the broader landscape."','"The team delved into the nuanced, multifaceted data available."'],
+    },
+    'Copulative Avoidance': {
+      def: 'LLMs replace the plain verbs "is" and "are" with more elaborate constructions like "serves as", "stands as", "marks", or "represents". Studies show a 10%+ drop in "is/are" in AI-edited academic writing.',
+      examples: ['"The gallery serves as the organization\'s primary space." (vs. "is")','"The report represents a significant step forward." (vs. "is")'],
+    },
+    'Negative Parallelism (\u201cNot Just\u2026But\u201d)': {
+      def: 'AI frequently uses "not only X, but also Y" constructions to appear balanced and nuanced — even when no clarification is needed.',
+      examples: ['"Not only does it reduce costs, but it also dramatically improves quality."','"Not only does the framework address current needs, but it anticipates future ones."'],
+    },
+    'Negative Parallelism (\u201cNot X\u2026But Y\u201d)': {
+      def: 'A related pattern where AI negates one trait then affirms another — "It\'s not X, it\'s Y." — or uses inline comma-negation like "X, not the Y."',
+      examples: ['"This is not a bug \u2014 it\'s a design decision."','"Infrastructure is the moat, not the model."'],
+    },
+    'Rule of Three': {
+      def: 'LLMs compulsively group items into exactly three — adjectives, nouns, or phrases — to make analysis feel comprehensive. A high frequency of three-item lists is the signal.',
+      examples: ['"The platform is fast, reliable, and easy to use."','"Clarity, consistency, and commitment define their culture."'],
+    },
+    'Elegant Variation': {
+      def: 'LLMs have a repetition penalty that causes them to swap synonyms for the same subject — "the entrepreneur", "the executive", "the business leader" — where a human would simply repeat the noun.',
+      examples: ['"Maria founded the company. The entrepreneur expanded. The executive later pivoted."'],
+    },
+    'Title Case Section Headings': {
+      def: 'AI chatbots capitalize every main word in headings (title case), whereas most style guides call for sentence case — only the first word and proper nouns capitalized.',
+      examples: ['"## The Role of Technology in Modern Education" (AI)','  "## The role of technology in modern education" (human norm)'],
+    },
+    'Mechanical Bolding': {
+      def: 'AI bolds every instance of a chosen keyword throughout a passage rather than using bold sparingly for genuine emphasis.',
+      examples: ['"The **primary objective** is to **optimize** the **workflow** for **maximum efficiency**."'],
+    },
+    'Emoji in Structural Elements': {
+      def: 'AI chatbots decorate section headings and bullet points with emoji. This is rare in formal human writing.',
+      examples: ['"🔑 Key Takeaway: The framework prioritizes speed."','"🧠 Cognitive Dissonance Pattern: You\'ve proven authorship\u2026"'],
+    },
+    'Em Dash Overuse': {
+      def: 'LLMs use em dashes (\u2014) more than human writers, especially in a "punched-up" style to emphasize clauses where a comma or colon would be more natural.',
+      examples: ['"The solution is elegant \u2014 simple in design yet powerful in execution."','"Three factors drive success \u2014 clarity, consistency, and follow-through."'],
+    },
+    'Unnecessary Table': {
+      def: 'AI defaults to creating small markdown tables for information that would read more naturally as a sentence or short paragraph — often 2\u20134 rows of simple key-value data.',
+      examples: ['A 3-row table showing "Market value | $2.1B / Founded | 2004 / HQ | Austin" that could be one sentence.'],
+    },
+    'Sycophantic Opener': {
+      def: 'AI models trained with RLHF developed a reflex of opening responses with a compliment or affirmation before actually answering.',
+      examples: ['"Great question! Let\'s explore this topic together."','"Absolutely! Here\'s a comprehensive overview of the subject."'],
+    },
+    'Formulaic Conclusion': {
+      def: 'AI almost always ends a response by summarizing what it just said with a meta-signal phrase. Human writers typically conclude with a new insight, not a recap.',
+      examples: ['"In summary, this approach offers a balanced combination of speed and reliability."','"Ultimately, the findings demonstrate that early intervention leads to better outcomes."'],
+    },
+  };
+
+  const textarea = document.getElementById('input-text');
+  const charCount = document.getElementById('char-count');
+  const tooltip = document.getElementById('pattern-tooltip');
+  let lastData = null;
+
+  textarea.addEventListener('input', () => {
+    const n = textarea.value.length;
+    charCount.textContent = n.toLocaleString() + ' character' + (n !== 1 ? 's' : '');
+  });
+  textarea.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runAnalysis(); });
+
+  function catClass(cat) { return cat === 'Language & Grammar' ? 'lang' : cat === 'Style' ? 'style' : 'add'; }
+  function catLabel(cat) { return cat === 'Language & Grammar' ? 'Language' : cat === 'Style' ? 'Style' : 'Additional'; }
+  function escapeHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function showTooltip(icon, patternType) {
+    const info = PATTERN_INFO[patternType];
+    if (!info) return;
+    document.getElementById('tt-name').textContent = patternType;
+    document.getElementById('tt-def').textContent = info.def;
+    const exEl = document.getElementById('tt-examples');
+    exEl.innerHTML = '';
+    for (const ex of info.examples) { const d = document.createElement('div'); d.className = 'tt-example'; d.textContent = ex; exEl.appendChild(d); }
+    const rect = icon.getBoundingClientRect();
+    const ttw = 300;
+    let left = rect.left;
+    if (left + ttw > window.innerWidth - 12) left = window.innerWidth - ttw - 12;
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = (rect.bottom + 8) + 'px';
+    tooltip.classList.add('visible');
+  }
+  function hideTooltip() { tooltip.classList.remove('visible'); }
+
+  function buildResultsHTML(grouped) {
+    const container = document.getElementById('results-container');
+    container.innerHTML = '';
+    for (const cat of CATEGORY_ORDER) {
+      const catData = grouped[cat];
+      if (!catData) continue;
+      const section = document.createElement('div');
+      section.className = 'category-section';
+      const title = document.createElement('div');
+      title.className = 'category-title';
+      title.textContent = cat;
+      section.appendChild(title);
+      for (const [patternType, findings] of Object.entries(catData)) {
+        const group = document.createElement('div');
+        group.className = 'pattern-group';
+        const nameRow = document.createElement('div');
+        nameRow.className = 'pattern-name';
+        nameRow.innerHTML = `<span class="cat-tag ${catClass(cat)}">${catLabel(cat)}</span>${escapeHtml(patternType)}<span class="pattern-count">${findings.length}</span><i class="pattern-info-icon" aria-label="What is this pattern?">?</i>`;
+        const icon = nameRow.querySelector('.pattern-info-icon');
+        icon.addEventListener('mouseenter', () => showTooltip(icon, patternType));
+        icon.addEventListener('mouseleave', hideTooltip);
+        group.appendChild(nameRow);
+        for (const f of findings) {
+          const card = document.createElement('div');
+          card.className = `finding-card cat-${catClass(cat)}`;
+          card.innerHTML = `<div class="finding-location">${escapeHtml(f.location)}</div><div class="finding-match">${escapeHtml(f.matched_text)}</div><div class="finding-context">${escapeHtml(f.context)}</div>`;
+          group.appendChild(card);
+        }
+        section.appendChild(group);
+      }
+      container.appendChild(section);
+    }
+    container.style.display = 'block';
+  }
+
+  function buildPlainReport(data) {
+    const lines = ['AI PATTERN DETECTOR \u2014 REPORT', '='.repeat(40), `Total flags: ${data.total_findings}`, ''];
+    for (const cat of CATEGORY_ORDER) {
+      const catData = data.grouped[cat];
+      if (!catData) continue;
+      lines.push(`## ${cat}`, '');
+      for (const [pt, findings] of Object.entries(catData)) {
+        lines.push(`### ${pt} (${findings.length} instance${findings.length !== 1 ? 's' : ''})`);
+        for (const f of findings) { lines.push(`  Location: ${f.location}`, `  Match:    ${f.matched_text}`, `  Context:  ${f.context}`, ''); }
+      }
+    }
+    return lines.join('\n');
+  }
+
+  async function copyReport() {
+    if (!lastData) return;
+    await navigator.clipboard.writeText(buildPlainReport(lastData));
+    const fb = document.getElementById('copy-feedback');
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 2000);
+  }
+
+  async function runAnalysis() {
+    const text = textarea.value.trim();
+    if (!text) return;
+    const btn = document.getElementById('btn-analyze');
+    btn.disabled = true;
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('summary-bar').style.display = 'none';
+    document.getElementById('results-container').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'none';
+
+    // Yield to browser so spinner renders before analysis blocks
+    await new Promise(r => setTimeout(r, 20));
+
+    try {
+      const findings = analyze(text);
+      const grouped = groupFindings(findings);
+      lastData = { total_findings: findings.length, grouped };
+
+      document.getElementById('spinner').style.display = 'none';
+      btn.disabled = false;
+
+      if (!findings.length) { document.getElementById('empty-state').style.display = 'block'; return; }
+
+      const patternTypes = Object.values(grouped).reduce((s, c) => s + Object.keys(c).length, 0);
+      document.getElementById('stat-total').textContent = findings.length.toLocaleString();
+      document.getElementById('stat-patterns').textContent = patternTypes;
+      document.getElementById('stat-cats').textContent = Object.keys(grouped).length;
+      document.getElementById('summary-bar').style.display = 'flex';
+      buildResultsHTML(grouped);
+    } catch (err) {
+      document.getElementById('spinner').style.display = 'none';
+      btn.disabled = false;
+      const errEl = document.getElementById('error-msg');
+      errEl.textContent = 'Error: ' + err.message;
+      errEl.style.display = 'block';
+    }
+  }
+  </script>
+</body>
+</html>
