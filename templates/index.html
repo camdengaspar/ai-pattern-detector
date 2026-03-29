@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Pattern Detector</title>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+  />
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #21253a;
+      --border: #2e3248;
+      --accent: #6c63ff;
+      --accent-hover: #857df7;
+      --text: #e2e4ef;
+      --text-muted: #7b8099;
+      --tag-lang: #1e3a5f;
+      --tag-lang-text: #63b3ed;
+      --tag-style: #1e3b2e;
+      --tag-style-text: #68d391;
+      --tag-add: #3b2e1a;
+      --tag-add-text: #f6ad55;
+      --match-bg: #2a2310;
+      --match-border: #f6ad55;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2rem 0 4rem;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .page-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #fff;
+    }
+    .page-header p {
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0.5rem auto 0;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .card-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+
+    textarea#input-text {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      padding: 1rem;
+      resize: vertical;
+      min-height: 220px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea#input-text:focus {
+      border-color: var(--accent);
+    }
+    textarea#input-text::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn-analyze {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.65rem 1.75rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-analyze:hover { background: var(--accent-hover); }
+    .btn-analyze:active { transform: scale(0.98); }
+    .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-copy {
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-copy:hover { color: var(--text); border-color: var(--text-muted); }
+
+    #summary-bar {
+      display: none;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .summary-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .summary-stat .num {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+    .summary-stat .label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .category-section { margin-bottom: 2rem; }
+    .category-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pattern-group { margin-bottom: 1.25rem; }
+    .pattern-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .pattern-count {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      font-size: 0.72rem;
+      padding: 1px 8px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .finding-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.88rem;
+    }
+    .finding-card.cat-lang { border-left-color: var(--tag-lang-text); }
+    .finding-card.cat-style { border-left-color: var(--tag-style-text); }
+    .finding-card.cat-add { border-left-color: var(--tag-add-text); }
+
+    .finding-location {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+      font-family: monospace;
+    }
+    .finding-match {
+      display: inline-block;
+      background: var(--match-bg);
+      border: 1px solid var(--match-border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: #f6ad55;
+      font-family: monospace;
+      font-size: 0.85rem;
+      margin-bottom: 0.4rem;
+      word-break: break-all;
+    }
+    .finding-context {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      font-style: italic;
+    }
+
+    .cat-tag {
+      display: inline-block;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 1px 7px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .cat-tag.lang { background: var(--tag-lang); color: var(--tag-lang-text); }
+    .cat-tag.style { background: var(--tag-style); color: var(--tag-style-text); }
+    .cat-tag.add { background: var(--tag-add); color: var(--tag-add-text); }
+
+    #empty-state {
+      display: none;
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+    #empty-state .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    #empty-state p { font-size: 0.95rem; }
+
+    #spinner {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+
+    #error-msg {
+      display: none;
+      background: #2d1a1a;
+      border: 1px solid #7b2929;
+      color: #fc8181;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+
+    #results-container { display: none; }
+
+    .copy-feedback {
+      font-size: 0.8rem;
+      color: var(--tag-style-text);
+      margin-left: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .copy-feedback.show { opacity: 1; }
+
+    /* Pattern tooltip */
+    .pattern-name {
+      position: relative;
+      cursor: default;
+    }
+    .pattern-info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-style: normal;
+      cursor: help;
+      flex-shrink: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .pattern-info-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    #pattern-tooltip {
+      position: fixed;
+      z-index: 9999;
+      width: 300px;
+      background: #1e2235;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    #pattern-tooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .tt-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.4rem;
+    }
+    .tt-def {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 0.55rem;
+    }
+    .tt-examples-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+    .tt-example {
+      font-size: 0.76rem;
+      color: #f6ad55;
+      font-style: italic;
+      line-height: 1.5;
+      padding-left: 0.6rem;
+      border-left: 2px solid #f6ad5566;
+      margin-bottom: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 860px;">
+
+    <div class="page-header">
+      <h1>AI Pattern Detector</h1>
+      <p>Paste your draft below. The scanner checks for 15 mechanical AI writing patterns and reports exactly where they appear — ready to hand off to an LLM for revision.</p>
+    </div>
+
+    <!-- Input panel -->
+    <div class="card-panel mb-4">
+      <textarea
+        id="input-text"
+        placeholder="Paste your content here…"
+      ></textarea>
+      <div class="d-flex align-items-center gap-3 mt-3">
+        <button class="btn-analyze" id="btn-analyze" onclick="runAnalysis()">
+          Analyze
+        </button>
+        <span id="char-count" style="font-size:0.82rem; color:var(--text-muted);">0 characters</span>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="error-msg"></div>
+
+    <!-- Spinner -->
+    <div id="spinner">
+      <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+      Scanning patterns…
+    </div>
+
+    <!-- Summary bar -->
+    <div id="summary-bar" class="d-flex">
+      <div class="summary-stat">
+        <span class="num" id="stat-total">0</span>
+        <span class="label">Total Flags</span>
+      </div>
+      <div class="summary-stat">
+        <span class="num" id="stat-patterns">0</span>
+        <span class="label">Pattern Types</span>
+      </div>
+      <div class="summary-stat">
+        <span class="num" id="stat-cats">0</span>
+        <span class="label">Categories</span>
+      </div>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <button class="btn-copy" onclick="copyReport()">Copy Report</button>
+        <span class="copy-feedback" id="copy-feedback">Copied!</span>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state">
+      <div class="icon">&#10003;</div>
+      <p>No AI patterns detected in this text.</p>
+    </div>
+
+    <!-- Results -->
+    <div id="results-container"></div>
+
+  </div>
+
+  <!-- Hover tooltip -->
+  <div id="pattern-tooltip">
+    <div class="tt-name" id="tt-name"></div>
+    <div class="tt-def" id="tt-def"></div>
+    <div class="tt-examples-label">Examples</div>
+    <div id="tt-examples"></div>
+  </div>
+
+  <script>
+    const textarea = document.getElementById('input-text');
+    const charCount = document.getElementById('char-count');
+    const CATEGORY_ORDER = ['Language & Grammar', 'Style', 'Additional'];
+    let lastData = null;
+
+    const PATTERN_INFO = {
+      'AI Vocabulary Density': {
+        def: 'LLMs overuse a predictable set of elevated, formal-sounding words far more often than human writers do — words like "pivotal", "delve", "tapestry", and "meticulous" cluster together as a strong signal.',
+        examples: [
+          '"This pivotal interplay is crucial to understanding the broader landscape."',
+          '"The team delved into the nuanced, multifaceted data available."',
+        ],
+      },
+      'Copulative Avoidance': {
+        def: 'LLMs replace the plain verbs "is" and "are" with more elaborate constructions like "serves as", "stands as", "marks", or "represents". Studies show a 10%+ drop in "is/are" in AI-edited academic writing.',
+        examples: [
+          '"The gallery serves as the organization\'s primary space." (vs. "is")',
+          '"The report represents a significant step forward." (vs. "is")',
+        ],
+      },
+      'Negative Parallelism ("Not Just…But")': {
+        def: 'AI frequently uses "not only X, but also Y" constructions to appear balanced and nuanced — even when no clarification is needed. Repeated use is a strong signal.',
+        examples: [
+          '"Not only does it reduce costs, but it also dramatically improves quality."',
+          '"Not only does the framework address current needs, but it anticipates future ones."',
+        ],
+      },
+      'Negative Parallelism ("Not X…But Y")': {
+        def: 'A related pattern where AI explicitly negates one trait then affirms another — "It\'s not X, it\'s Y." Often used sentence-to-sentence for a punchy, rhetorical effect.',
+        examples: [
+          '"This is not a bug — it\'s a design decision."',
+          '"This isn\'t about rules. It\'s about values."',
+        ],
+      },
+      'Rule of Three': {
+        def: 'LLMs compulsively group items into exactly three — adjectives, nouns, or phrases — to make analysis feel comprehensive. A high frequency of three-item lists in a passage is the signal.',
+        examples: [
+          '"The platform is fast, reliable, and easy to use."',
+          '"Clarity, consistency, and commitment define their culture."',
+        ],
+      },
+      'Elegant Variation': {
+        def: 'LLMs have a repetition penalty that causes them to swap synonyms for the same subject across a passage — "the entrepreneur", "the executive", "the business leader" — where a human would simply repeat the noun.',
+        examples: [
+          '"Maria founded the company. The entrepreneur expanded. The executive later pivoted."',
+          '"Python was released in 1991. The language grew. The scripting tool now powers AI."',
+        ],
+      },
+      'Title Case Section Headings': {
+        def: 'AI chatbots capitalize every main word in headings (title case), whereas most style guides call for sentence case — only the first word and proper nouns capitalized.',
+        examples: [
+          '"## The Role of Technology in Modern Education" (AI)',
+          '"## The role of technology in modern education" (human norm)',
+        ],
+      },
+      'Mechanical Bolding': {
+        def: 'AI bolds every instance of a chosen keyword throughout a passage, or bolds terms in a "key takeaways" style, rather than using bold sparingly for genuine emphasis.',
+        examples: [
+          '"The **primary objective** is to **optimize** the **workflow** for **maximum efficiency**."',
+          '"**Speed**, **accuracy**, and **reliability** are the **three pillars**."',
+        ],
+      },
+      'Emoji in Structural Elements': {
+        def: 'AI chatbots decorate section headings and bullet points with emoji, placing them before headers or list items. This is rare in formal human writing.',
+        examples: [
+          '"🔑 Key Takeaway: The framework prioritizes speed."',
+          '"🧠 Cognitive Dissonance Pattern: You\'ve proven authorship…"',
+        ],
+      },
+      'Em Dash Overuse': {
+        def: 'LLMs use em dashes (—) more than human writers, especially in a "punched-up" style to emphasize clauses or parallelisms where a comma, colon, or parenthesis would be more natural.',
+        examples: [
+          '"The solution is elegant — simple in design yet powerful in execution."',
+          '"Three factors drive success — clarity, consistency, and follow-through."',
+        ],
+      },
+      'Unnecessary Table': {
+        def: 'AI defaults to creating small markdown tables for information that would read more naturally as a sentence or short paragraph — often 2–4 rows of simple key-value data.',
+        examples: [
+          'A 3-row table showing "Market value | $2.1B / Founded | 2004 / HQ | Austin" that could be one sentence.',
+        ],
+      },
+      'Sycophantic Opener': {
+        def: 'AI models trained with RLHF developed a reflex of opening responses with a compliment or affirmation before actually answering. Most visible in conversational AI output.',
+        examples: [
+          '"Great question! Let\'s explore this topic together."',
+          '"Absolutely! Here\'s a comprehensive overview of the subject."',
+        ],
+      },
+      'Formulaic Conclusion': {
+        def: 'AI almost always ends a response by summarizing what it just said, opening the final paragraph with a meta-signal phrase. Human writers typically conclude with a new insight, not a recap.',
+        examples: [
+          '"In summary, this approach offers a balanced combination of speed and reliability."',
+          '"Ultimately, the findings demonstrate that early intervention leads to better outcomes."',
+        ],
+      },
+    };
+
+    textarea.addEventListener('input', () => {
+      const n = textarea.value.length;
+      charCount.textContent = n.toLocaleString() + ' character' + (n !== 1 ? 's' : '');
+    });
+
+    textarea.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runAnalysis();
+    });
+
+    function catClass(cat) {
+      if (cat === 'Language & Grammar') return 'lang';
+      if (cat === 'Style') return 'style';
+      return 'add';
+    }
+
+    function catLabel(cat) {
+      if (cat === 'Language & Grammar') return 'Language';
+      if (cat === 'Style') return 'Style';
+      return 'Additional';
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Tooltip logic
+    const tooltip = document.getElementById('pattern-tooltip');
+    let tooltipTimeout = null;
+
+    function showTooltip(icon, patternType) {
+      const info = PATTERN_INFO[patternType];
+      if (!info) return;
+
+      document.getElementById('tt-name').textContent = patternType;
+      document.getElementById('tt-def').textContent = info.def;
+
+      const examplesEl = document.getElementById('tt-examples');
+      examplesEl.innerHTML = '';
+      for (const ex of info.examples) {
+        const d = document.createElement('div');
+        d.className = 'tt-example';
+        d.textContent = ex;
+        examplesEl.appendChild(d);
+      }
+
+      const rect = icon.getBoundingClientRect();
+      const ttWidth = 300;
+      let left = rect.left;
+      if (left + ttWidth > window.innerWidth - 12) {
+        left = window.innerWidth - ttWidth - 12;
+      }
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = (rect.bottom + 8) + 'px';
+      tooltip.classList.add('visible');
+    }
+
+    function hideTooltip() {
+      tooltip.classList.remove('visible');
+    }
+
+    function buildResultsHTML(data) {
+      const container = document.getElementById('results-container');
+      container.innerHTML = '';
+
+      for (const cat of CATEGORY_ORDER) {
+        const catData = data.grouped[cat];
+        if (!catData) continue;
+
+        const section = document.createElement('div');
+        section.className = 'category-section';
+
+        const title = document.createElement('div');
+        title.className = 'category-title';
+        title.textContent = cat;
+        section.appendChild(title);
+
+        for (const [patternType, findings] of Object.entries(catData)) {
+          const group = document.createElement('div');
+          group.className = 'pattern-group';
+
+          const nameRow = document.createElement('div');
+          nameRow.className = 'pattern-name';
+          nameRow.innerHTML = `
+            <span class="cat-tag ${catClass(cat)}">${catLabel(cat)}</span>
+            ${escapeHtml(patternType)}
+            <span class="pattern-count">${findings.length}</span>
+            <i class="pattern-info-icon" aria-label="What is this pattern?">?</i>
+          `;
+
+          // Attach tooltip to the ? icon
+          const icon = nameRow.querySelector('.pattern-info-icon');
+          icon.addEventListener('mouseenter', () => showTooltip(icon, patternType));
+          icon.addEventListener('mouseleave', hideTooltip);
+
+          group.appendChild(nameRow);
+
+          for (const f of findings) {
+            const card = document.createElement('div');
+            card.className = `finding-card cat-${catClass(cat)}`;
+            card.innerHTML = `
+              <div class="finding-location">${escapeHtml(f.location)}</div>
+              <div class="finding-match">${escapeHtml(f.matched_text)}</div>
+              <div class="finding-context">${escapeHtml(f.context)}</div>
+            `;
+            group.appendChild(card);
+          }
+
+          section.appendChild(group);
+        }
+
+        container.appendChild(section);
+      }
+
+      container.style.display = 'block';
+    }
+
+    function buildPlainReport(data) {
+      const lines = [];
+      lines.push('AI PATTERN DETECTOR — REPORT');
+      lines.push('='.repeat(40));
+      lines.push(`Total flags: ${data.total_findings}`);
+      lines.push('');
+
+      for (const cat of CATEGORY_ORDER) {
+        const catData = data.grouped[cat];
+        if (!catData) continue;
+        lines.push(`## ${cat}`);
+        lines.push('');
+
+        for (const [patternType, findings] of Object.entries(catData)) {
+          lines.push(`### ${patternType} (${findings.length} instance${findings.length !== 1 ? 's' : ''})`);
+          for (const f of findings) {
+            lines.push(`  Location: ${f.location}`);
+            lines.push(`  Match:    ${f.matched_text}`);
+            lines.push(`  Context:  ${f.context}`);
+            lines.push('');
+          }
+        }
+      }
+
+      return lines.join('\n');
+    }
+
+    async function copyReport() {
+      if (!lastData) return;
+      await navigator.clipboard.writeText(buildPlainReport(lastData));
+      const fb = document.getElementById('copy-feedback');
+      fb.classList.add('show');
+      setTimeout(() => fb.classList.remove('show'), 2000);
+    }
+
+    async function runAnalysis() {
+      const text = textarea.value.trim();
+      if (!text) return;
+
+      const btn = document.getElementById('btn-analyze');
+      btn.disabled = true;
+      document.getElementById('spinner').style.display = 'block';
+      document.getElementById('summary-bar').style.display = 'none';
+      document.getElementById('results-container').style.display = 'none';
+      document.getElementById('empty-state').style.display = 'none';
+      document.getElementById('error-msg').style.display = 'none';
+
+      try {
+        const res = await fetch('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+        const data = await res.json();
+        lastData = data;
+
+        document.getElementById('spinner').style.display = 'none';
+        btn.disabled = false;
+
+        if (data.total_findings === 0) {
+          document.getElementById('empty-state').style.display = 'block';
+          return;
+        }
+
+        const patternTypes = Object.values(data.grouped)
+          .reduce((acc, cat) => acc + Object.keys(cat).length, 0);
+        document.getElementById('stat-total').textContent = data.total_findings.toLocaleString();
+        document.getElementById('stat-patterns').textContent = patternTypes;
+        document.getElementById('stat-cats').textContent = Object.keys(data.grouped).length;
+        document.getElementById('summary-bar').style.display = 'flex';
+
+        buildResultsHTML(data);
+
+      } catch (err) {
+        document.getElementById('spinner').style.display = 'none';
+        btn.disabled = false;
+        const errEl = document.getElementById('error-msg');
+        errEl.textContent = 'Error: ' + err.message;
+        errEl.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>
