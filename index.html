@@ -131,13 +131,65 @@
     .tt-def { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 0.55rem; }
     .tt-examples-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.3rem; }
     .tt-example { font-size: 0.76rem; color: #f6ad55; font-style: italic; line-height: 1.5; padding-left: 0.6rem; border-left: 2px solid #f6ad5566; margin-bottom: 0.25rem; }
+
+    /* Info sections */
+    .info-sections { margin-top: 4rem; }
+    .info-section { margin-bottom: 3.5rem; }
+    .info-section-title {
+      font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;
+    }
+    .info-section-subtitle {
+      font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;
+    }
+    .info-divider {
+      border: none; border-top: 1px solid var(--border); margin-bottom: 1.75rem;
+    }
+    .patterns-category-label {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); margin-bottom: 0.75rem; margin-top: 1.5rem;
+      padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+    }
+    .patterns-category-label:first-child { margin-top: 0; }
+    .patterns-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+    }
+    @media (max-width: 600px) { .patterns-grid { grid-template-columns: 1fr; } }
+    .pattern-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.9rem 1rem;
+    }
+    .pattern-card-header {
+      display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.5rem;
+    }
+    .pattern-card-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .pattern-card-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 0.55rem; }
+    .pattern-card-example {
+      font-size: 0.75rem; color: #f6ad55; font-style: italic; line-height: 1.5;
+      padding-left: 0.55rem; border-left: 2px solid #f6ad5544;
+    }
+
+    .how-it-works-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+    }
+    @media (max-width: 600px) { .how-it-works-grid { grid-template-columns: 1fr; } }
+    .how-step {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1rem 1.1rem; display: flex; gap: 0.85rem; align-items: flex-start;
+    }
+    .how-step-num {
+      flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; margin-top: 1px;
+    }
+    .how-step-title { font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
+    .how-step-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; }
   </style>
 </head>
 <body>
   <div class="container" style="max-width:860px;">
     <div class="page-header">
       <h1>AI Pattern Detector</h1>
-      <p>Paste your draft below. The scanner checks for 13 mechanical AI writing patterns and reports exactly where they appear — ready to hand off to an LLM for revision.</p>
+      <p>Paste your draft below. The scanner checks for 13 mechanical AI writing patterns and reports exactly where they appear, ready to hand off to an LLM for revision.</p>
     </div>
     <div class="card-panel mb-4">
       <textarea id="input-text" placeholder="Paste your content here…"></textarea>
@@ -162,6 +214,132 @@
     </div>
     <div id="empty-state"><div class="icon">&#10003;</div><p>No AI patterns detected in this text.</p></div>
     <div id="results-container"></div>
+
+    <!-- ── Info sections ── -->
+    <div class="info-sections">
+
+      <!-- Section 1: Pattern reference -->
+      <div class="info-section">
+        <h2 class="info-section-title">Common AI Patterns + Examples</h2>
+        <p class="info-section-subtitle">The scanner checks for 13 mechanical patterns across three categories. No single pattern proves AI authorship. These signals are most meaningful in combination.</p>
+        <hr class="info-divider" />
+
+        <div class="patterns-category-label">Language &amp; Grammar</div>
+        <div class="patterns-grid">
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag lang">Language</span><span class="pattern-card-name">AI Vocabulary Density</span></div>
+            <div class="pattern-card-desc">LLMs overuse a predictable pool of elevated words — "pivotal", "delve", "tapestry", "meticulous", "nuanced" — that cluster together as a strong signal.</div>
+            <div class="pattern-card-example">"This pivotal interplay is crucial to understanding the broader landscape."</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag lang">Language</span><span class="pattern-card-name">Copulative Avoidance</span></div>
+            <div class="pattern-card-desc">LLMs replace plain "is/are" with elaborate constructions like "serves as", "stands as", or "represents". Studies show 10%+ fewer is/are in AI-edited writing.</div>
+            <div class="pattern-card-example">"The gallery serves as the organization's primary space." (vs. "is")</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag lang">Language</span><span class="pattern-card-name">Negative Parallelism — Not Just…But</span></div>
+            <div class="pattern-card-desc">AI frequently uses "not only X, but also Y" to appear balanced and nuanced — even when no clarification is needed.</div>
+            <div class="pattern-card-example">"Not only does it reduce costs, but it also dramatically improves quality."</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag lang">Language</span><span class="pattern-card-name">Negative Parallelism — Not X…But Y</span></div>
+            <div class="pattern-card-desc">AI negates one trait then affirms another — "It's not X, it's Y" — or uses inline comma-negation like "X, not the Y." Can span across two sentences.</div>
+            <div class="pattern-card-example">"Infrastructure is the moat, not the model."</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag lang">Language</span><span class="pattern-card-name">Rule of Three</span></div>
+            <div class="pattern-card-desc">LLMs compulsively group items into exactly three — adjectives, nouns, or phrases — to make analysis feel comprehensive. High frequency is the signal.</div>
+            <div class="pattern-card-example">"The platform is fast, reliable, and easy to use."</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag lang">Language</span><span class="pattern-card-name">Elegant Variation</span></div>
+            <div class="pattern-card-desc">LLMs swap synonyms to avoid repeating the same noun — "the entrepreneur", "the executive", "the business leader" — where a human would simply repeat it.</div>
+            <div class="pattern-card-example">"Maria founded the company. The entrepreneur expanded. The executive later pivoted."</div>
+          </div>
+        </div>
+
+        <div class="patterns-category-label">Style</div>
+        <div class="patterns-grid">
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag style">Style</span><span class="pattern-card-name">Title Case Section Headings</span></div>
+            <div class="pattern-card-desc">AI capitalizes Every Main Word in headings. Most style guides call for sentence case — only the first word and proper nouns.</div>
+            <div class="pattern-card-example">"## The Role of Technology in Modern Education" (AI signal)</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag style">Style</span><span class="pattern-card-name">Mechanical Bolding</span></div>
+            <div class="pattern-card-desc">AI bolds every instance of a chosen keyword rather than using bold sparingly for genuine emphasis. Flagged when bolded words exceed ~8% of total words.</div>
+            <div class="pattern-card-example">"The <strong>primary objective</strong> is to <strong>optimize</strong> the <strong>workflow</strong> for <strong>maximum efficiency</strong>."</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag style">Style</span><span class="pattern-card-name">Emoji in Structural Elements</span></div>
+            <div class="pattern-card-desc">AI chatbots decorate headings and bullet points with emoji. This is rare in formal human writing and a strong visual signal.</div>
+            <div class="pattern-card-example">"🔑 Key Takeaway: The framework prioritizes speed over accuracy."</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag style">Style</span><span class="pattern-card-name">Em Dash Overuse</span></div>
+            <div class="pattern-card-desc">LLMs use em dashes (—) in a "punched-up" style to emphasize clauses where a comma or colon would be more natural. Every em dash is flagged.</div>
+            <div class="pattern-card-example">"The solution is elegant — simple in design yet powerful in execution."</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag style">Style</span><span class="pattern-card-name">Unnecessary Tables</span></div>
+            <div class="pattern-card-desc">AI defaults to small markdown tables for data that reads more naturally as a sentence — typically 2–4 rows of simple key-value pairs.</div>
+            <div class="pattern-card-example">A 3-row table showing "Founded | 2004 / HQ | Austin / Revenue | $2.1B" that could be one sentence.</div>
+          </div>
+        </div>
+
+        <div class="patterns-category-label">Additional</div>
+        <div class="patterns-grid">
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag add">Additional</span><span class="pattern-card-name">Sycophantic Opener</span></div>
+            <div class="pattern-card-desc">AI trained with RLHF developed a reflex of opening with a compliment before answering — "Great question!", "Absolutely!", "Certainly!"</div>
+            <div class="pattern-card-example">"Great question! Let's explore this topic together."</div>
+          </div>
+          <div class="pattern-card">
+            <div class="pattern-card-header"><span class="cat-tag add">Additional</span><span class="pattern-card-name">Formulaic Conclusion</span></div>
+            <div class="pattern-card-desc">AI almost always ends by recapping what it just said. Human writers typically conclude with a new insight, not a summary of previous points.</div>
+            <div class="pattern-card-example">"In summary, this approach offers a balanced combination of speed and reliability."</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: How it works -->
+      <div class="info-section">
+        <h2 class="info-section-title">How this AI Pattern Checker Works</h2>
+        <p class="info-section-subtitle">No AI is used to detect AI. Every check is a mechanical scan: regex patterns and string matching running directly in your browser. Your text is never sent to a server.</p>
+        <hr class="info-divider" />
+        <div class="how-it-works-grid">
+          <div class="how-step">
+            <div class="how-step-num">1</div>
+            <div>
+              <div class="how-step-title">Paste your draft</div>
+              <div class="how-step-desc">Drop any text into the box — a blog post, report, email, or any content you want to check. There's no word limit.</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-num">2</div>
+            <div>
+              <div class="how-step-title">13 detectors run instantly</div>
+              <div class="how-step-desc">Each detector scans for a specific mechanical pattern using regular expressions and string analysis. Everything runs locally in your browser — nothing is uploaded anywhere.</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-num">3</div>
+            <div>
+              <div class="how-step-title">Results pinpoint exact locations</div>
+              <div class="how-step-desc">Every flag reports the pattern type, which paragraph and sentence it appears in, and the exact matched text shown in context.</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <div class="how-step-num">4</div>
+            <div>
+              <div class="how-step-title">Copy and hand off to an LLM</div>
+              <div class="how-step-desc">Hit "Copy Report" to get a plain-text version of all findings. Paste it into ChatGPT or Claude with a prompt like: "Rewrite the flagged passages to remove these AI patterns."</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /info-sections -->
   </div>
 
   <div id="pattern-tooltip">
