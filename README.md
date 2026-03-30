@@ -43,12 +43,21 @@ Hover over the **?** icon next to any pattern name in the UI for a plain-English
 
 ## Getting Started
 
+### Option 1 — Browser (no install)
+Just open `index.html` in any browser. No server, no dependencies.
+
+```bash
+open index.html
+```
+
+### Option 2 — Flask (local server)
+
 **Requirements:** Python 3.8+
 
 ```bash
 # Clone the repo
 git clone https://github.com/camdengaspar/ai-pattern-detector.git
-cd ai-pattern-detector
+cd ai-pattern-detector/flask-version
 
 # Create a virtual environment and install dependencies
 python3 -m venv venv
@@ -64,18 +73,21 @@ Then open [http://localhost:5000](http://localhost:5000) in your browser.
 
 ```
 ai-pattern-detector/
-├── app.py            # Flask app — serves the UI and /analyze endpoint
-├── detector.py       # All 13 pattern detectors and location-mapping logic
-├── requirements.txt  # Python dependencies (flask only)
-└── templates/
-    └── index.html    # Frontend — textarea, results panel, tooltips
+├── index.html              # Standalone JS version — open in any browser or deploy to GitHub Pages
+├── README.md
+└── flask-version/          # Original Python/Flask app (local development)
+    ├── app.py              # Flask app — serves the UI and /analyze endpoint
+    ├── detector.py         # All 13 pattern detectors and location-mapping logic
+    ├── requirements.txt    # Python dependencies (flask only)
+    └── templates/
+        └── index.html      # Flask frontend
 ```
 
 ## How Detection Works
 
-All detection is pure Python — no ML models or external APIs. Each pattern uses regex and string analysis against the submitted text. A location-mapping helper converts character offsets to human-readable `Paragraph N, Sentence M` labels so results are easy to find in your original draft.
+All detection is pure regex and string analysis — no ML models or external APIs. Each pattern scans the submitted text and a location-mapping helper converts character offsets to human-readable `Paragraph N, Sentence M` labels so results are easy to find in the original draft.
 
-The `/analyze` endpoint returns findings grouped by category and pattern type as JSON, which the frontend renders into the results panel.
+The JS version (`index.html`) runs entirely in the browser. The Flask version (`flask-version/`) runs the same logic in Python on a local server, with findings returned as JSON to the frontend.
 
 ## Notes
 
